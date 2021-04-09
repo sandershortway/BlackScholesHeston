@@ -49,13 +49,13 @@ def SurfacePlot(T, K, P, S0, r):
   for Trow in T:
     IV.append([])
     for j in range(0,len(Trow)):
-      z = bisection(S0, K[i][j], T[i][j], r, P[j][i], 0, 1, 25)
+      z = bisection(S0, K[i][j], T[i][j], r, P[j][i], 0, 1, 50)
       if (z is None):
         print("NoneType Error")
         print(K[i][j], T[i][j], P[j][i])
         return -1
       else:
-        IV[i].append(100 * bisection(S0, K[i][j], T[i][j], r, P[j][i], 0, 1, 25))
+        IV[i].append(100 * z)
     i += 1
   iv = np.array(IV) # Convert to numpy array
   surf = ax.plot_surface(T, K, iv, cmap=cm.coolwarm)
@@ -86,7 +86,6 @@ for d in D:
   A = readcsv("apple", int(d))
   for i in range(0, len(A)):
     K.append(A[i][0])
-    T.append(A[i][1])
     P.append(A[i][2])
   k.append(K)
   p.append(P)

@@ -15,7 +15,7 @@ def EuroCall(S0, K, T, r, sigma):
 
 # Calculates price of European put via put-call parity in Black-Scholes formula
 def EuroPut(S0, K, T, r, sigma):
-  call = BSEuroCall(S0, K, T, r, sigma)
+  call = EuroCall(S0, K, T, r, sigma)
   return call + K * np.exp(-r * T) - S0
 
 # Surface plot for price of EuroCall for various strikes and maturities
@@ -41,33 +41,33 @@ def SurfacePlot(S0, r, sigma):
   fig.set_size_inches(10, 10)
   plt.savefig("fig/BlackScholesFormula" + str(r) + ".png")
 
-'''
-##### Work in Progress #################################
-# Calculates price of European call via simulation
-def EuroCallSim(S0, K, T, r, sigma):
-  N = 1000 # number of samples
-  n = round(T/dt)
-  t = np.linspace(0, T, n)
-  p = []
-  for i in range(0, N):
-    St = S0 * np.exp((r * T + sigma * np.random.normal(0,1))
-    print(St)
-    p.append(max(St - K, 0))
-  return np.exp(-r * T) * np.mean(p)
-
 # Calculates price of a forward contract via Black-Scholes Formula
 def ForwCont(S0, K, T, r):
   return S0 - np.exp(-r * T) * K
-########################################################
-'''
+
+# Calculates price of European call via simulation
+def EuroCallMC(S0, K, T, r, sigma):
+  N = 1000000 # number of samples
+  p = []
+  for i in range(0, N):
+    St = S0 * np.exp(T * (r - (sigma ** 2) / 2) + sigma * np.sqrt(T) * np.random.standard_normal())
+    p.append(max(St - K, 0))
+  return np.exp(-r * T) * np.mean(p)
+
+# Calculates price of European put via simulation
+def EuroPutMC(S0, K, T, r, sigma):
+  N = 1000000 # number of samples
+  p = []
+  for i in range(0, N):
+    St = S0 * np.exp(T * (r - (sigma ** 2) / 2) + sigma * np.sqrt(T) * np.random.standard_normal())
+    p.append(max(K - St, 0))
+  return np.exp(-r * T) * np.mean(p)
 
 if (__name__ == "__main__"):
-  np.random.seed(68486)
+  np.random.seed(3)
   T = 3
   K = 110
-  R = [0, 1, 5, 15]
+  r = 0.1
   dt = 0.01
   S0 = 100
   sigma = 0.06
-  for r in R:
-    SurfacePlot(S0, r, sigma)

@@ -11,12 +11,14 @@ We want to be able to calculate the price of a European call option using both n
 **The Black-Scholes Model**
 - [x] Calculate price of European call option
 - [x] Calculate price of European put option
-- [ ] Calculate price of European call option using simulation
-- [ ] Calculate price of Forward contract
+- [x] Calculate price of European call option using simulation
+- [x] Calculate price of European put option using simulation
+- [x] Calculate price of Forward contract
 - [x] Calculate implied volatility
-- [ ] Implement systemic way to import marketdata by reading datalist.txt
 - [x] Surface plot of price for various strikes and maturities
 - [x] Surface plot of implied volatility for various strikes and maturities
+- [ ] Fix Nonetype error in bisection method
+- [ ] Implement systemic way to import marketdata by reading datalist.txt
 
 **The Heston Model**
 - [ ] Check if Feller condition is satisfied
