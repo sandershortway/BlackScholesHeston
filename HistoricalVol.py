@@ -5,9 +5,9 @@ import pandas as pd
 
 # plt.style.use('ggplot')
 
-stock = pd.read_csv("data/tesla.csv")
+stock = pd.read_csv("data/amazon.csv")
 stock["Last"] = stock["Last"].values[::-1] #Reverse order
-stock['Volatility'] = stock.Last.rolling(5).std()
+stock['Volatility'] = stock.Last.rolling(21).std()
 # Last = np.array(stock.Last)
 # Vol = np.array(stock.Volatility)
 # print(Last)
@@ -31,6 +31,6 @@ axs[0].set_xlim([0, 520])
 axs[1].plot(stock.Last)
 axs[1].grid()
 axs[1].set_xlabel('Trading days since 03/20/2019')
-axs[1].set_ylabel('Tesla stock')
+axs[1].set_ylabel('Amazon stock')
 axs[1].set_xlim([0, 520])
-plt.savefig("fig/tesla " + str(rho) + ".jpg")
+plt.savefig("fig/amazon " + str(rho) + ".jpg")
