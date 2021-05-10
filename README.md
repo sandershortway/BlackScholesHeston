@@ -42,7 +42,7 @@ We want to be able to calculate the price of a European call option using both n
 
 **Differential Evolution**
 - [x] Evaluate minimization objective function for particular set of parameters
-- [ ] Generate test data for testing algorithm
+- [x] Generate test data for testing algorithm
 
 # Information on the data
 The data that will be relevant is the maturity time in days and strike price of various European call options for a particular stock. The data is currently in .csv format which I was able to download from barchart.com. I cleaned up the data by removing rows and columns which were not relevant. The model does not do this for us (yet). The first column contains the strike price and the second column the market price for a European call option.

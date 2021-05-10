@@ -30,10 +30,10 @@ def CharFunc(S0, v0, vbar, kappa, zeta, r, rho, T, w):
 def EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho):
   cf = lambda w: CharFunc(S0, v0, vbar, kappa, zeta, r, rho, T, w)
   i1 = lambda w: np.real((np.exp(-1j * w * np.log(K)) * cf(w - 1j)) / (1j * w * cf(- 1j)))
-  I1 = quad(i1, 0, 10)
+  I1 = quad(i1, 0, np.inf)
   Pi1 = 0.5 + I1[0]/np.pi 
   i2 = lambda w: np.real((np.exp(-1j * w * np.log(K)) * cf(w)) / (1j * w))
-  I2 = quad(i2, 0, 10)
+  I2 = quad(i2, 0, np.inf)
   Pi2 = 0.5 + I2[0]/np.pi
   return S0 * Pi1 - K * np.exp(-r*T) * Pi2
 
@@ -78,53 +78,88 @@ def PlotVarEuler(T, v0, vbar, kappa, zeta, rho, N):
   plt.plot(mean)
   return var
 
-def PlotSpotEuler(S0, K, T, v0, vbar, kappa, zeta, r, rho, mu, N):
+def PlotSpotEuler(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
   dt = 1/N
-  vol = []
+  var = []
   spot = []
   v = v0
   vplus = max(v, 0)
-  logS = np.log(S0)
+  X = np.log(S0)
   N1 = np.random.normal(0, dt, N)
   N2 = np.random.normal(0, dt, N)
   N3 = rho * N1 + np.sqrt(1 -  rho ** 2) * N2 #CorrCoef(N1,N3)=rho
-  for i in range(0, N):
-    vol.append(v)
-    spot.append(np.exp(logS))
-    v += dt * kappa * (vbar - vplus) + N1[i] * zeta * np.sqrt(vplus)
+  for n in N1: # Generate variance process
+    var.append(v)
+    v += dt * kappa * (vbar - vplus) + n * zeta * np.sqrt(vplus)
     vplus = max(v, 0)
-    logS += dt * (mu - v / 2) + N3[i] * np.sqrt(v)
-  # plt.plot(spot)
+  
+  for i in range(0,len(var)): # Generate spot price process
+    spot.append(np.exp(X))
+    X += (r - var[i]/2) * dt + np.sqrt(var[i]) * zeta * N3[i]
+  plt.plot(spot)
   return spot
 
+def HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
+  dt = float(T)/float(N)
+  # Generate normal samples and correlated Brownian motions
+  N1 = np.random.normal(0,1,N+1)
+  N2 = np.random.normal(0,1,N+1)
+  N2 = rho * N1 + np.sqrt(1 - rho ** 2) * N2 # Set CorrCoeff(N1,N2)=rho
+  W1 = [N1[0]]
+  W2 = [N2[0]]
+  for i in range(1,len(N1)): 
+    W1.append(W1[i-1] + np.sqrt(dt) * N1[i-1])
+    W2.append(W2[i-1] + np.sqrt(dt) * N2[i-1])
+  
+  # Simulate Variance Path
+  v = v0
+  var = []
+  for i in range(0,N):
+    var.append(np.maximum(0,v))
+    dBt = W1[i+1]-W1[i]
+    v += kappa * (vbar - np.maximum(v,0)) * dt + zeta * np.sqrt(np.maximum(v,0)) * dBt
+  
+  # Simulate Price Path
+  X = []
+  x = np.log(S0)
+  for i in range(1,N):
+    X.append(x)
+    dBt = W2[i+1]-W2[i]
+    x += (r - 0.5 * var[i])*dt + zeta * np.sqrt(var[i]) * dBt
+  
+  S = np.exp(X)
+  return S
+  
+
 if (__name__ == "__main__"):
-  # Dynamic parameters
+  # Heston parameters
   S0 = 100        # Spot price
-  v0 = 0.1        # Intial volatility
-  r = 0.03           # Interest rate
-  kappa = 5       # Mean-reversion rate of volatility
-  vbar = 0.10     # Long-term variance
-  rho = -0.5      # Correlation between BM's
+  v0 = 0.03        # Intial volatility
+  r = 0.01           # Interest rate
+  kappa = 0.5       # Mean-reversion rate of volatility
+  vbar = 0.04    # Long-term variance
+  rho = -0.9      # Correlation between BM's
   zeta = 1       # Volatility of variance
+  P = []
 
   # Option parameters
-  K = 110
-  T = 10
-  N = 1000
+  K = 100
+  T = 1
+  N = 10000 # Time steps
+  M = 1000
 
-
+  # Set Random Seed
   np.random.seed(645358)
 
-  E = 0
-
-  for i in range(100):
-    E = EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho)
-
-  print(E)
-
+  # Monte Carlo
+  for j in range(M):
+    HP = HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N)
+    P.append(np.maximum(HP[-1]-K,0))
+  
+  print("Price\t\t", EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho))
+  print("Monte Carlo\t", np.exp(-r*T)*np.mean(P))
+  
   # plt.figaspect(16/9)
-  # plt.title("Thee variance processes")
-  # plt.ylabel("Variance: $v(t)$")
   # plt.grid()
   # plt.show()
   print("--- %s seconds ---" % (time.time() - start_time))
