@@ -17,17 +17,16 @@ We want to be able to calculate the price of a European call option using both n
 - [x] Calculate implied volatility
 - [x] Surface plot of price for various strikes and maturities
 - [x] Surface plot of implied volatility for various strikes and maturities
-- [ ] Fix Nonetype error in bisection method
 
 **The Heston Model**
 - [x] Check if Feller condition is satisfied
-- [ ] Generate sample paths of S(t)
-- [ ] Generate sample paths of v(t)
+- [x] Generate sample paths of S(t)
+- [x] Generate sample paths of v(t)
 - [x] Calculate price of European call option using numerical estimation of integrals
-- [ ] Calculate price of European call option using Monte Carlo simulation
+- [x] Calculate price of European call option using Monte Carlo simulation
 - [x] Calculate price of European put option using put-call parity
-- [ ] Calibrating the Heston model to market data
-- [ ] Pricing of various exotic options using Monte Carlo simulation
+- [x] Calibrating the Heston model to market data
+- [x] Pricing of various exotic options using Monte Carlo simulation
 
 **Brownian Motion**
 - [x] Generate sample path of Brownian motion
@@ -43,9 +42,6 @@ We want to be able to calculate the price of a European call option using both n
 **Differential Evolution**
 - [x] Evaluate minimization objective function for particular set of parameters
 - [x] Generate test data for testing algorithm
-
-# Information on the data
-The data that will be relevant is the maturity time in days and strike price of various European call options for a particular stock. The data is currently in .csv format which I was able to download from barchart.com. I cleaned up the data by removing rows and columns which were not relevant. The model does not do this for us (yet). The first column contains the strike price and the second column the market price for a European call option.
 
 # Contact
 Email: sanderkorteweg@gmail.com

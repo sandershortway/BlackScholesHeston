@@ -7,6 +7,7 @@ from scipy.stats import norm
 from scipy.integrate import quad
 import time
 start_time = time.time()
+plt.style.use('ggplot')
 
 #Returns if Feller Condition is satisfied
 def Feller(kappa, vbar, zeta):
@@ -37,6 +38,17 @@ def EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho):
   Pi2 = 0.5 + I2[0]/np.pi
   return S0 * Pi1 - K * np.exp(-r*T) * Pi2
 
+# Calculates price of European call option
+def Pi2(S0, K, T, v0, vbar, kappa, zeta, r, rho):
+  cf = lambda w: CharFunc(S0, v0, vbar, kappa, zeta, r, rho, T, w)
+  i1 = lambda w: np.real((np.exp(-1j * w * np.log(K)) * cf(w - 1j)) / (1j * w * cf(- 1j)))
+  I1 = quad(i1, 0, np.inf)
+  Pi1 = 0.5 + I1[0]/np.pi 
+  i2 = lambda w: np.real((np.exp(-1j * w * np.log(K)) * cf(w)) / (1j * w))
+  I2 = quad(i2, 0, np.inf)
+  Pi2 = 0.5 + I2[0]/np.pi
+  return Pi2
+
 # Calculates price of European put option
 def EuroPut(S0, K, T, v0, vbar, kappa, zeta, r, rho):
   call = EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho)
@@ -60,25 +72,6 @@ def CharPlot(a, b, step):
   plt.axis(xmin=a,xmax=b)
   plt.show()
 
-# Euler scheme for volatility process
-def PlotVarEuler(T, v0, vbar, kappa, zeta, rho, N):
-  dt = 1/N
-  time = np.arange(0, T, dt)
-  var = []
-  mean = []
-  v = v0
-  vplus = max(v, 0)
-  N1 = np.random.normal(0, dt, N)
-  for n in N1:
-    var.append(v)
-    mean.append(vbar)
-    v += dt * kappa * (vbar - vplus) + n * zeta * np.sqrt(vplus)
-    vplus = max(v, 0)
-  plt.plot(var)
-  plt.plot(mean)
-  return var
-
-def PlotSpotEuler(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
   dt = 1/N
   var = []
   spot = []
@@ -99,7 +92,8 @@ def PlotSpotEuler(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
   plt.plot(spot)
   return spot
 
-def HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
+# Generates a Heston price path
+def HestonPath(S0, T, v0, vbar, kappa, zeta, r, rho, N):
   dt = float(T)/float(N)
   # Generate normal samples and correlated Brownian motions
   N1 = np.random.normal(0,1,N+1)
@@ -118,7 +112,6 @@ def HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
     var.append(np.maximum(0,v))
     dBt = W1[i+1]-W1[i]
     v += kappa * (vbar - np.maximum(v,0)) * dt + zeta * np.sqrt(np.maximum(v,0)) * dBt
-  
   # Simulate Price Path
   X = []
   x = np.log(S0)
@@ -126,40 +119,70 @@ def HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N):
     X.append(x)
     dBt = W2[i+1]-W2[i]
     x += (r - 0.5 * var[i])*dt + zeta * np.sqrt(var[i]) * dBt
+  return np.exp(X)
   
-  S = np.exp(X)
-  return S
+# Generates a Heston price path
+def PlotHestonPath(S0, T, v0, vbar, kappa, zeta, r, rho, N):
+  dt = float(T)/float(N)
+  # Generate normal samples and correlated Brownian motions
+  N1 = np.random.normal(0,1,N+1)
+  N2 = np.random.normal(0,1,N+1)
+  N2 = rho * N1 + np.sqrt(1 - rho ** 2) * N2 # Set CorrCoeff(N1,N2)=rho
+  W1 = [N1[0]]
+  W2 = [N2[0]]
+  for i in range(1,len(N1)): 
+    W1.append(W1[i-1] + np.sqrt(dt) * N1[i-1])
+    W2.append(W2[i-1] + np.sqrt(dt) * N2[i-1])
   
+  # Simulate Variance Path
+  v = v0
+  var = []
+  for i in range(0,N):
+    var.append(np.maximum(0,v))
+    dBt = W1[i+1]-W1[i]
+    v += kappa * (vbar - np.maximum(v,0)) * dt + zeta * np.sqrt(np.maximum(v,0)) * dBt
+  # Simulate Price Path
+  X = []
+  x = np.log(S0)
+  for i in range(1,N):
+    X.append(x)
+    dBt = W2[i+1]-W2[i]
+    x += (r - 0.5 * var[i])*dt + zeta * np.sqrt(var[i]) * dBt
+  return [var, np.exp(X)]
 
 if (__name__ == "__main__"):
+  plt.figure(figsize=(10,6))
   # Heston parameters
-  S0 = 100        # Spot price
-  v0 = 0.03        # Intial volatility
-  r = 0.01           # Interest rate
-  kappa = 0.5       # Mean-reversion rate of volatility
-  vbar = 0.04    # Long-term variance
-  rho = -0.9      # Correlation between BM's
-  zeta = 1       # Volatility of variance
+  S0 = 100 
+  v0 = 0.15
+  r = 0.05
+  kappa = 1
+  vbar = 0.15
+  rho = -0.5
+  zeta = 0.5
   P = []
 
   # Option parameters
-  K = 100
-  T = 1
-  N = 10000 # Time steps
+  K = 0.01
+  T = 5
+  N = 1000 # Time steps
   M = 1000
 
   # Set Random Seed
-  np.random.seed(645358)
+  np.random.seed(round(start_time))
+  print(Pi2(S0, K, T, v0, vbar, kappa, zeta, r, rho))
+  # HP = HestonPath(S0, T, v0, vbar, kappa, zeta, r, rho, N)
+  # t = np.linspace(0, T, len(HP))
+  # plt.plot(t, HP, color="b", label="Stock price")
 
-  # Monte Carlo
-  for j in range(M):
-    HP = HestonPath(S0, K, T, v0, vbar, kappa, zeta, r, rho, N)
-    P.append(np.maximum(HP[-1]-K,0))
+  # M = np.max(HP)
+  # m = np.min(HP)
+  # plt.hlines(M, xmin=0, xmax=T, label="Maximum", color="r")
+  # plt.hlines(m, xmin=0, xmax=T, label="Minimum", color="m")
+  # plt.legend()
+
+  # plt.xlabel("Time (years)")
+  # plt.ylabel("Price ($)")
+  # plt.ylim(50, 150)
   
-  print("Price\t\t", EuroCall(S0, K, T, v0, vbar, kappa, zeta, r, rho))
-  print("Monte Carlo\t", np.exp(-r*T)*np.mean(P))
-  
-  # plt.figaspect(16/9)
-  # plt.grid()
   # plt.show()
-  print("--- %s seconds ---" % (time.time() - start_time))

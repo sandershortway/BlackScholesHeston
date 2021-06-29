@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-#plt.style.use('ggplot')
-np.random.seed(1456584)
+plt.style.use('ggplot')
+np.random.seed(75438945)
 
 # Generates a random walk with n steps and up prob. p
 def RandomWalk(n, p):
@@ -19,20 +18,18 @@ def RandomWalk(n, p):
 
 # Generates a Brownian Motion path on [0,T] using N steps
 def BrownianMotion(T, N):
-    dt = round(T/N)
-    W = np.random.normal(0, dt)
-    print(W)
-    # W = np.cumsum(W)
+    dt = T/N
+    W = np.random.normal(0, dt, N)
+    W = np.cumsum(W)
     return W
 
 # Generates a correlated Brownian Motion path on [0,T]
 # where the correlation coefficient is rho, correlated with BM
-def CorBrownianMotion(B1, rho, T, dt):
-    n = round(T/dt)
-    t = np.linspace(0, T, n)
+def CorBrownianMotion(B1, rho, T, N):
+    dt = round(T/N)
     C = []
-    B2 = BrownianMotion(T, dt)
-    for i in range(0, n):
+    B2 = BrownianMotion(T, N)
+    for i in range(0, N):
         C.append(rho * B1[i] + np.sqrt(1 - rho ** 2) * B2[i])
     return C
 
@@ -57,16 +54,10 @@ def GeometricBrownianMotion(S0, mu, sigma, T, dt):
     return G
 
 if (__name__ == "__main__"):
-    S0 = 100
-    T = 10
-    dt = 0.01
-    sigma = 0.02
-    r = 0
-    
-    G = GeometricBrownianMotion(S0, r, sigma, T, dt)
-    plt.axis(ymin = 80, ymax = 120)
-    plt.xlabel("Time $t$")
-    plt.ylabel("Stock price $S(t)$")
-    plt.title("The trajectory of stock 1")
-
+    T = 100
+    t = np.linspace(0, T)
+    plt.plot(RandomWalk(T,1/2))
+    plt.xlim(0,100)
+    plt.xlabel("Steps: $n$")
+    plt.ylabel("Random Walk: $S_n$")
     plt.show()

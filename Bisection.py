@@ -33,12 +33,13 @@ def bisection(S0, K, T, r, p, a, b, imax):
   for i in range(0, imax):
     mid = (a + b)/2
     BS = bs.EuroCall(S0, K, T, r, mid)
-    if (abs(BS - p) < 0.01):
+    if (abs(BS - p) < 0.02):
       return mid
     elif (BS < p):
       a = mid
     elif (BS >= p):
       b = mid
+  print("Nonetype error")
 
 # Surface plot for implied vol of EuroCall for various strikes and maturities
 def SurfacePlot(T, K, P, S0, r):
@@ -65,36 +66,3 @@ def SurfacePlot(T, K, P, S0, r):
   ax.set_zlabel('Implied volatility in %')
   fig.set_size_inches(10, 10)
   plt.show()
-
-# Parameters
-S0 = 120.09 # Current stock price
-r = 0       # Interest rate
-
-# Bisection method parameters
-a = 0       # Left bound of interval
-b = 1       # Right bound of the interval
-imax = 25   # Max number of iterations
-
-# Import data
-D = [2, 8, 15, 22, 29, 36] # List of maturity times
-k = []  # List of strike lists
-p = []  # List of prices
-for d in D:
-  P = []
-  T = []
-  K = []
-  A = readcsv("apple", int(d))
-  for i in range(0, len(A)):
-    K.append(A[i][0])
-    P.append(A[i][2])
-  k.append(K)
-  p.append(P)
-
-# Check if strike lists are equal
-for i in range(0, len(k) - 1):
-  if (not ListEquality(k[i], k[i+1])):
-    print("List Equality Error in T =", D[i+1])
-  else:
-    K = k[0]
-
-SurfacePlot(D, K, p, S0, r)

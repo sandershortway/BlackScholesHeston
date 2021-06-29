@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import Heston as h
 import BlackScholes as bs
-from scipy.optimize import Bounds, differential_evolution
+from scipy.optimize import Bounds, differential_evolution, minimize
 import time
 import csv
 start_time = time.time()
@@ -28,7 +28,27 @@ def ObjFuncAbs(theta, S0, r, K, T, P):
       p = h.EuroCall(S0, K[i], T[j], theta[3], theta[1], theta[0], theta[2], r, theta[4])
       sum += np.abs(P[i][j] - p)
   return sum
- 
+
+def MktObjFuncSqr(theta, S0, r):
+  sum = 0
+  with open("data/AppleYear.csv", 'r') as csvfile:
+    f = csv.reader(csvfile, delimiter=",")
+    next(f) # Skips first header row
+    for row in f:
+      p = h.EuroCall(S0, float(row[0]),float(row[1]),theta[3],theta[1],theta[0],theta[2],r,theta[4])
+      sum += (p - float(row[2])) ** 2
+  return sum
+
+def MktObjFuncRelAbs(theta, S0, r):
+  sum = 0
+  with open("data/Appeltje.csv", 'r') as csvfile:
+    f = csv.reader(csvfile, delimiter=",")
+    next(f) # Skips first header row
+    for row in f:
+      p = h.EuroCall(S0, float(row[0]),float(row[1]),theta[3],theta[1],theta[0],theta[2],r,theta[4])
+      sum += np.abs(p - float(row[2])) / float(row[2]) 
+  return sum
+
 # Generates sample data that, in theory, allows for perfect calibration 
 def CreateP(theta, S0, r, K, T):
   P = []
@@ -81,30 +101,32 @@ def RandomHP(lb, ub, N):
   return Theta
 
 if (__name__ == "__main__"):
-  S0 = 100
-  r = 0
-
-  T = [1,2,3,4,5]
-  K = [50,80,90,95,100,105,110,120,150]
-
-  goal = [0.96, 0.72, 1.64, 0.86, -0.68]
-  P = CreateP(goal, S0, r, K, T)
+  S0 = 133.55
+  r = -0.480
 
   # Setting bounds
-  imax = 100
-  lb = [0.1,0,0,0,-1]
-  ub = [10,1,10,1,-0]
+  imax = 1000
+  lb = [0.1,0,0.1,0,-1]
+  ub = [10,1,10,1,0]
+
+  K = []
+  T = []
+  P = []
 
   # Run DE and print results
-  print("Goal:", goal)
-  result = differential_evolution(ObjFuncSqr, Bounds(lb,ub), args=(S0, r, K, T, P), disp=True, maxiter=imax, callback=Iteration)
+  print("Stock price =", S0)
+  result = differential_evolution(MktObjFuncRelAbs, Bounds(lb,ub), args=(S0, r), disp=True, maxiter=imax, callback=Iteration)
+  print("\n==========================================")
   print(result)
   print("\n==========================================")
-  print("Found theta:", result.x)
-  print("Goal theta:", goal)
-  print("Heston prices calculated:", result.nfev * len(K) * len(T))
-  print("==========================================")
-  print("Price matrix:\n", P)
-  Px = CreateP(result.x, S0, r, K, T)
-  print("Found price matrix:\n",Px)
+  theta = result.x
+  with open("log/Appeltje.csv", 'w') as csvf:
+    w = csv.writer(csvf, delimiter=",")
+    w.writerow(["Strike","Maturity","Market Price","Calibration Price", "Abs error"])
+    with open("data/Appeltje.csv", 'r') as csvfile:
+      f = csv.reader(csvfile, delimiter=",")
+      next(f) # Skips first header row
+      for row in f:
+        p = h.EuroCall(S0, float(row[0]),float(row[1]),theta[3],theta[1],theta[0],theta[2],r,theta[4])
+        w.writerow([row[0],row[1], row[2], p, np.abs(p-float(row[2]))])
   print("--- %s seconds ---" % (time.time() - start_time))
